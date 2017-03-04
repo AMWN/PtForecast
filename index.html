@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8">
 
-    <title>PtForecast</title>
+    <title>PtForecast 0.1</title>
     <meta name="prognose" content="Prognose per Project">
     <meta name="awi" content="">
 
@@ -19,6 +19,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nprogress/0.2.0/nprogress.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
 
     <style>
         .table>tbody>tr>td,
@@ -55,13 +56,13 @@
             <legend>Standopname</legend>
 
             <form>
-                <div v-if="error || !projects" class="form-group row">
+                <div v-if="!selectedProject || error" class="form-group row">
                     <label for="Url" class="col-sm-2 col-form-label">Profit Rest Service URL</label>
                     <div class="col-sm-10">
                         <input type="text" class="form-control" id="url" v-model="url" aria-describedby="getUrl" placeholder="https://XXXXXX.afasonlineconnector.nl/profitrestservices">
                     </div>
                 </div>
-                <div v-if="(error || !projects)" class="form-group row">
+                <div v-if="(!selectedProject || error )" class="form-group row">
                     <label for="token" class="col-sm-2 col-form-label"> Token</label>
                     <div class="col-sm-10">
                         <input type="text" class="form-control" id="token" v-model="token" aria-describedby="getToken" placeholder="<token>....</token>">
@@ -75,7 +76,7 @@
                         </select>
                     </div>
                 </div>
-                <button v-if="!projects" @click="getProjects($event)" class="btn btn-sm">Get Projects</button>
+                <button v-if="!projects && !selectedProject" @click="getProjects($event)" class="btn btn-sm">Get Projects</button>
             </form>
 
             <!-- Main component for a primary marketing message or call to action -->
@@ -109,12 +110,12 @@
                         </td>
                         <td>
                             <div class="input-group input-group-xs">
-                                <input v-model="monitorid.adjustmentNW" type="number" class="form-control" placeholder=""  required>
+                                <input v-model="monitorid.adjustmentNW" type="number" class="form-control" placeholder="" required>
                             </div>
                         </td>
                         <td>
                             <div class="input-group input-group-xs">
-                                <input v-model="monitorid.toelichting"  type="text" class="form-control" placeholder="...">
+                                <input v-model="monitorid.toelichting" type="text" class="form-control" placeholder="...">
                             </div>
                         </td>
                         <td>
@@ -125,18 +126,36 @@
                     </tr>
                 </tbody>
             </table>
-            <!-- <pre>{{monitorids}}</pre> -->
+
             <pre v-if="error">{{error}}</pre>
+            <a  @click.prevent="debug=!debug" style="position:fixed;right:0;bottom:0;margin:0px; padding:0px;" class="glyphicon glyphicon-info-sign"></a>
+            <a class="btn btn-default btn-xs" style="position:fixed;right:0;bottom:0;margin:0px; padding:0px;" v-if="debug" @click.prevent="clearCache()" aria-label="Settings">
+                <i class="fa fa-remove" aria-hidden="true"></i>
+            </a>
+            <pre v-if="debug">{{monitorids}}</pre>
 
         </div>
         <!-- /container -->
     </div>
     <script>
+        var getParameterByName = function(name, url) {
+            if (!url) {
+                url = window.location.href;
+            }
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+
         var vm = new Vue({
             el: '#app',
             data: {
-                message: 'Hello Vue.js!',
+                debug: false,
                 token: null,
+                tokenCached: false,
                 projects: null,
                 error: null,
                 url: null,
@@ -144,12 +163,22 @@
                 monitorids: null,
             },
             methods: {
+                clearCache() {
+                    localStorage.clear();
+                },
                 getLocalStorage() {
                     this.token = (localStorage.getItem('token') ? localStorage.getItem('token') : null)
                     this.url = (localStorage.getItem('url') ? localStorage.getItem('url') : null)
+                    if(this.token){this.tokenCached = true}
                     if (this.token) {
-                        this.getProjects();
+                        if (getParameterByName('PrId')) {
+                            this.getWerkbegroting(getParameterByName('PrId'));
+                            this.selectedProject = getParameterByName('PrId');
+                        } else {
+                            this.getProjects();
+                        }
                     }
+
                 },
                 getProjects(event) {
                     if (event) event.preventDefault();
@@ -191,7 +220,7 @@
                                 "@PrId": monitorid.Project,
                                 "@MoId": monitorid.Bewakingscode,
                                 "Fields": {
-                                    "Date": new Date().toISOString().substring(0,10),
+                                    "Date": new Date().toISOString().substring(0, 10),
                                     "PeRe": monitorid.progressNw,
                                     "Adju": monitorid.adjustmentNW,
                                     "Re": monitorid.toelichting
@@ -219,7 +248,7 @@
                     })
 
                 },
-                getWerkbegroting(project){
+                getWerkbegroting(project) {
                     NProgress.start();
                     var vm = this;
                     vm.error = null;
@@ -235,7 +264,16 @@
                     fetch(request).then(function(res) {
                         return res.json();
                     }).then(function(res) {
-                        vm.monitorids = _.orderBy(res.rows, ['Bewakingscode'], ['asc']);
+                        return _.orderBy(res.rows, ['Bewakingscode'], ['asc']);
+                    }).then(function(res) {
+                        vm.monitorids = _(res).forEach(function(monitorid) {
+                            _.extend(monitorid, {
+                                adjustmentNW: 0,
+                                progressNw: null,
+                                toelichting: null
+                            })
+                            return monitorid;
+                        })
                         NProgress.done();
                     }).catch(function(err) {
                         vm.error = err;
