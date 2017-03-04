@@ -6,6 +6,6 @@ Onepage forecast for testing.
 - Import getconnector PtForecast_werkbegrotingen.gcn
 - Create AppConnector
 
-- Open index.html in browser
-of
-- use example at https://dev.amvdwielen.nl/PtForecast
+Open index.html in browser
+or
+use example at https://dev.amvdwielen.nl/PtForecast
