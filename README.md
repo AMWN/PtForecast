@@ -11,4 +11,4 @@ or
 use example at https://dev.amvdwielen.nl/PtForecast
 
 #Extra
-It is also possible to add this page as intergration part to InSite. Add the integration part to the project page to auto-filter on ProjectId. 
+It is also possible to add this page as integration part to InSite. Add the integration part to the project page to auto-filter on ProjectId. 
