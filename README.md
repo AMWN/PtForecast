@@ -1,5 +1,5 @@
 # PtForecast
-Onepage forecast for testing.
+Onepage Project forecast for testing.
 
 #Gettings started
 - Import getconnector PtForecast_standopname.gcn
