@@ -128,7 +128,7 @@
             </table>
 
             <pre v-if="error">{{error}}</pre>
-            <a  @click.prevent="debug=!debug" style="position:fixed;right:0;bottom:0;margin:0px; padding:0px;" class="glyphicon glyphicon-info-sign"></a>
+            <a @click.prevent="debug=!debug" style="position:fixed;right:0;bottom:0;margin:0px; padding:0px;" class="glyphicon glyphicon-info-sign"></a>
             <a class="btn btn-default btn-xs" style="position:fixed;right:0;bottom:0;margin:0px; padding:0px;" v-if="debug" @click.prevent="clearCache()" aria-label="Settings">
                 <i class="fa fa-remove" aria-hidden="true"></i>
             </a>
@@ -169,7 +169,9 @@
                 getLocalStorage() {
                     this.token = (localStorage.getItem('token') ? localStorage.getItem('token') : null)
                     this.url = (localStorage.getItem('url') ? localStorage.getItem('url') : null)
-                    if(this.token){this.tokenCached = true}
+                    if (this.token) {
+                        this.tokenCached = true
+                    }
                     if (this.token) {
                         if (getParameterByName('PrId')) {
                             this.getWerkbegroting(getParameterByName('PrId'));
@@ -279,8 +281,34 @@
                         vm.error = err;
                         NProgress.done();
                     })
+                },
+                getCssInSite() {
+                    //include js en css from InSite
+                    if (getParameterByName('dataurl')) {
+
+                        $http.jsonp(getParameterByName('dataurl') + "?callback=JSON_CALLBACK")
+                            .success(function(response) {
+                                var cssFile = response.cssUrl;
+                                var jsFile = response.scriptUrl;
+
+                                var neutralStyleSheet = cssFile.replace("integration", "neutraal");
+                                var ss = document.createElement("link");
+                                var js = document.createElement("script");
+                                ss.type = "text/css";
+                                ss.rel = "stylesheet";
+                                ss.href = neutralStyleSheet;
+                                document.getElementsByTagName("head")[0].appendChild(ss);
+
+                                js.src = jsFile;
+                                document.getElementsByTagName("head")[0].appendChild(js);
+                            })
+                            .error(function(response) {
+                                console.log('error appending css en js');
+                            });
+                    }
                 }
             },
+
             watch: {
                 selectedProject: function(val, oldVal) {
                     var vm = this;
@@ -289,7 +317,7 @@
                 }
             }
         })
-
+        vm.getCssInSite();
         vm.getLocalStorage();
     </script>
 </body>
