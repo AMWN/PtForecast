@@ -72,7 +72,7 @@
                     <label class="col-sm-2 col-form-label" for="projects">Projects</label>
                     <div class="col-sm-10">
                         <select v-model="selectedProject" class="form-control" id="exampleSelect1">
-                          <option v-for="project in projects">{{project.Omschrijving}} ({{project.Project}})</option>
+                          <option v-for="project in projects">{{project.Omschrijving}} ({{project.Nummer_offerte}})</option>
                         </select>
                     </div>
                 </div>
@@ -247,19 +247,19 @@
 
                     fetch(request).then(function(res) {
                         NProgress.done();
-                        vm.getWerkbegroting(monitorid.Project);
+                        vm.getWerkbegroting(monitorid.Offertenummer);
                     }).catch(function(err) {
                         vm.error = err;
                         NProgress.done();
                     })
 
                 },
-                getWerkbegroting(project) {
+                getWerkbegroting(offertenummer) {
                     NProgress.start();
                     var vm = this;
                     vm.error = null;
 
-                    var url = vm.url + '/connectors/PtForecast_standopname/Project/' + project + '?orderbyfieldsid=Bewakingscode';
+                    var url = vm.url + '/connectors/PtForecast_standopname/Offertenummer/' + offertenummer + '?orderbyfieldsid=Bewakingscode';
                     var request = new Request(url, {
                         headers: new Headers({
                             "Content-Type": "application/json",
@@ -293,15 +293,12 @@
                         fetch(getParameterByName('dataurl') + "?callback=JSON_CALLBACK")
                             .then((response) => response.text())
                             .then((responseText) => {
-                                console.log(responseText)
                                 const match = responseText.split('(')[1].split(')')[0];
                                 return JSON.parse(match);
                             })
                             .then(function(response) {
-                                console.log(response)
                                 var cssFile = response.cssUrl;
                                 var jsFile = response.scriptUrl;
-
                                 var neutralStyleSheet = cssFile.replace("integration", "neutraal");
                                 var ss = document.createElement("link");
                                 var js = document.createElement("script");
@@ -309,7 +306,6 @@
                                 ss.rel = "stylesheet";
                                 ss.href = neutralStyleSheet;
                                 document.getElementsByTagName("head")[0].appendChild(ss);
-
                                 js.src = jsFile;
                                 document.getElementsByTagName("head")[0].appendChild(js);
                             })
