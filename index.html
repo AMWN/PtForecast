@@ -38,17 +38,6 @@
 
 <body>
     <div id="app">
-        <!-- Static navbar -->
-        <nav class="navbar navbar-default navbar-static-top">
-            <div class="container">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-          </button>
-                    <a class="navbar-brand" href="#">{{selectedProject}}</a>
-                </div>
-            </div>
-        </nav>
 
         <div class="container-fluid">
 
@@ -56,13 +45,13 @@
             <legend>Standopname</legend>
 
             <form>
-                <div v-if="!selectedProject || error" class="form-group row">
+                <div v-if="!token || error" class="form-group row">
                     <label for="Url" class="col-sm-2 col-form-label">Profit Rest Service URL</label>
                     <div class="col-sm-10">
                         <input type="text" class="form-control" id="url" v-model="url" aria-describedby="getUrl" placeholder="https://XXXXXX.afasonlineconnector.nl/profitrestservices">
                     </div>
                 </div>
-                <div v-if="(!selectedProject || error )" class="form-group row">
+                <div v-if="!token || error" class="form-group row">
                     <label for="token" class="col-sm-2 col-form-label"> Token</label>
                     <div class="col-sm-10">
                         <input type="text" class="form-control" id="token" v-model="token" aria-describedby="getToken" placeholder="<token>....</token>">
@@ -155,14 +144,13 @@
             data: {
                 debug: false,
                 token: null,
-                tokenCached: false,
                 projects: null,
                 error: null,
                 url: null,
                 selectedProject: null,
                 monitorids: null,
             },
-            mounted () {
+            mounted() {
                 this.getLocalStorage();
                 this.getCssInSite();
             },
@@ -171,14 +159,14 @@
                     localStorage.clear();
                 },
                 getLocalStorage() {
-                    this.token = (localStorage.getItem('token') ? localStorage.getItem('token') : null)
-                    this.url = (localStorage.getItem('url') ? localStorage.getItem('url') : null)
-                    if (this.token) {
-                        this.tokenCached = true
+                    if (!this.token && !this.url) {
+                        this.token = (localStorage.getItem('token') ? localStorage.getItem('token') : null)
+                        this.url = (localStorage.getItem('url') ? localStorage.getItem('url') : null)
                     }
+
                     if (this.token) {
                         if (getParameterByName('PrId')) {
-                            this.getWerkbegroting(getParameterByName('PrId'));
+                            this.getWerkbegroting(null, getParameterByName('PrId'));
                             this.selectedProject = getParameterByName('PrId');
                         } else {
                             this.getProjects();
@@ -254,12 +242,13 @@
                     })
 
                 },
-                getWerkbegroting(offertenummer) {
+                getWerkbegroting(offertenummer, projectnummer) {
                     NProgress.start();
                     var vm = this;
                     vm.error = null;
 
-                    var url = vm.url + '/connectors/PtForecast_standopname/Offertenummer/' + offertenummer + '?orderbyfieldsid=Bewakingscode';
+                    var url = (offertenummer ? vm.url + '/connectors/PtForecast_standopname/Offertenummer/' + offertenummer + '?orderbyfieldsid=Bewakingscode' : vm.url + '/connectors/PtForecast_standopname/Project/' + projectnummer +
+                        '?orderbyfieldsid=Bewakingscode');
                     var request = new Request(url, {
                         headers: new Headers({
                             "Content-Type": "application/json",
