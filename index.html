@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8">
 
-    <title>PtForecast 0.1</title>
+    <title>PtForecast 0.3</title>
     <meta name="prognose" content="Prognose per Project">
     <meta name="awi" content="">
 
@@ -42,7 +42,7 @@
         <div class="container-fluid">
 
             <!-- Form Name -->
-            <legend>Standopname</legend>
+            <legend v-if="!PrId">Standopname {{selectedProject}}</legend>
 
             <form>
                 <div v-if="!token || error" class="form-group row">
@@ -75,11 +75,11 @@
                         <th>Code</th>
                         <th>Omschrijving</th>
                         <th>Begroot</th>
-                        <th>Uren</th>
-                        <th>Bijstelling (hdg)</th>
-                        <th>% gereed (hdg)</th>
-                        <th>% gereed (nw)</th>
-                        <th>Bijstelling (nw)</th>
+                        <th>Besteed</th>
+                        <th>Uren begroot</th>
+                        <th>Uren besteed</th>
+                        <th>% gereed</th>
+                        <th>Bijstelling</th>
                         <th>Toelichting</th>
                         <th></th>
                     </tr>
@@ -89,26 +89,26 @@
                         <th>{{monitorid.Bewakingscode}}</th>
                         <td>{{monitorid.Omschrijving}}</td>
                         <td>{{monitorid.Begroot}}</td>
-                        <td>{{parseFloat(monitorid.Aantal_uren).toFixed(2)}}</td>
-                        <td>{{monitorid.Bijgesteld}}</td>
-                        <td>{{monitorid.__Gereed}}</td>
+                        <td>{{monitorid.Besteed}}</td>
+                        <td>{{parseFloat(monitorid.Aantal_uren).toFixed(0)}}</td>
+                        <td>{{monitorid.Besteed_uren}}</td>
                         <td>
                             <div class="input-group input-group-xs">
-                                <input v-model="monitorid.progressNw" type="number" class="form-control" placeholder="%">
+                                <input v-on:keyup.enter="saveMonitorId(monitorid, $event)" v-model="monitorid.__Gereed" type="number" class="form-control" placeholder="%">
                             </div>
                         </td>
                         <td>
                             <div class="input-group input-group-xs">
-                                <input v-model="monitorid.adjustmentNW" type="number" class="form-control" placeholder="" required>
+                                <input v-on:keyup.enter="saveMonitorId(monitorid, $event)" v-model="monitorid.Bijgesteld" type="number" class="form-control" placeholder="0" required>
                             </div>
                         </td>
                         <td>
                             <div class="input-group input-group-xs">
-                                <input v-model="monitorid.toelichting" type="text" class="form-control" placeholder="...">
+                                <input v-on:keyup.enter="saveMonitorId(monitorid, $event)" v-model="monitorid.toelichting" type="text" class="form-control" placeholder="...">
                             </div>
                         </td>
                         <td>
-                            <a class="btn btn-default" @click="saveMonitorId(monitorid, $event)" aria-label="Settings">
+                            <a class="btn btn-default" @click.prevent="saveMonitorId(monitorid, $event)" aria-label="Settings">
                                 <i class="fa fa-save" aria-hidden="true"></i>
                             </a>
                         </td>
@@ -149,12 +149,17 @@
                 url: null,
                 selectedProject: null,
                 monitorids: null,
+                PrId: null,
             },
             mounted() {
+                this.getQueryParameterPrId();
                 this.getLocalStorage();
                 this.getCssInSite();
             },
             methods: {
+                getQueryParameterPrId(){
+                    if (getParameterByName('PrId')) this.PrId = getParameterByName('PrId')
+                },
                 clearCache() {
                     localStorage.clear();
                 },
@@ -165,9 +170,9 @@
                     }
 
                     if (this.token) {
-                        if (getParameterByName('PrId')) {
-                            this.getWerkbegroting(null, getParameterByName('PrId'));
-                            this.selectedProject = getParameterByName('PrId');
+                        if (this.PrId) {
+                            this.getWerkbegroting(null, this.PrId);
+                            this.selectedProject = this.PrId;
                         } else {
                             this.getProjects();
                         }
@@ -215,8 +220,8 @@
                                 "@MoId": monitorid.Bewakingscode,
                                 "Fields": {
                                     "Date": new Date().toISOString().substring(0, 10),
-                                    "PeRe": monitorid.progressNw,
-                                    "Adju": monitorid.adjustmentNW,
+                                    "PeRe": monitorid.__Gereed,
+                                    "Adju": monitorid.Bijgesteld ? monitorid.Bijgesteld : 0,
                                     "Re": monitorid.toelichting
                                 }
                             }
